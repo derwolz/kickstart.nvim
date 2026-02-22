@@ -297,10 +297,16 @@ require("lazy").setup({
 		},
 	},
 
+	{ -- Auto-save and commit markdown files to git
+		"derwolz/nvim-md-git-autosave",
+		ft = "markdown", -- Only load for markdown files
+		opts = {},
+	},
+
 	{
 		-- Switch from the local path to your GitHub handle
 		"derwolz/claude-write",
-
+		branch = "claude-piping",
 		-- This ensures it loads when you use your book-writing shortcuts
 		keys = { "<leader>cr", "<leader>cc", "<leader>cl", "<leader>cg", "<leader>cR" },
 
@@ -1029,8 +1035,10 @@ require("lazy").setup({
 		cmd = "ZenMode", -- Allows you to trigger it manually with :ZenMode
 		opts = {
 			window = {
-				width = 0.85, -- The window takes up 85% of the screen width
+				width = 0.88, -- The window takes up 85% of the screen width
 				options = {
+					wrap = true,
+					linebreak = true,
 					number = false, -- hide line numbers in zen mode
 					relativenumber = false,
 				},
@@ -1086,18 +1094,95 @@ vim.api.nvim_create_autocmd("FileType", {
 		vim.cmd("ZenMode")
 	end,
 })
+local function find_scene_break(direction)
+	local current_line = vim.fn.line(".")
+	local total_lines = vim.fn.line("$")
+	local step = direction == "next" and 1 or -1
+	local i = current_line + step
 
+	while i >= 1 and i <= total_lines do
+		local line = vim.fn.getline(i)
+		if line:match("^%s*%*%*%*%s*$") or line:match("^%s*%\\%*%\\%*%\\%*%s*$") then
+			return i
+		end
+		i = i + step
+	end
+
+	return nil
+end
+
+local function scene_break_motion(direction)
+	local target = find_scene_break(direction)
+	if not target then
+		vim.notify("No scene break found", vim.log.levels.INFO)
+		return
+	end
+
+	local mode = vim.fn.mode()
+
+	-- Push to jumplist in normal mode
+	if mode == "n" then
+		vim.cmd("normal! m'")
+	end
+
+	vim.fn.cursor(target, 1)
+end
+
+for _, mapping in ipairs({
+	{ "].", "next" },
+	{ "[.", "prev" },
+}) do
+	local keys, direction = mapping[1], mapping[2]
+
+	-- Normal mode
+	vim.keymap.set("n", keys, function()
+		scene_break_motion(direction)
+	end, { desc = (direction == "next" and "Next" or "Prev") .. " scene break" })
+
+	-- Visual mode
+	vim.keymap.set("x", keys, function()
+		scene_break_motion(direction)
+	end, { desc = (direction == "next" and "Next" or "Prev") .. " scene break (visual)" })
+
+	-- Operator-pending mode (enables d]., y]., c]., v]., etc.)
+	vim.keymap.set("o", keys, function()
+		local target = find_scene_break(direction)
+		if not target then
+			vim.notify("No scene break found", vim.log.levels.INFO)
+			return
+		end
+
+		-- In operator-pending mode, we define the motion range via marks
+		local current = vim.fn.line(".")
+		if direction == "next" then
+			-- Include lines from cursor to scene break (inclusive)
+			vim.fn.cursor(target, 1)
+		else
+			-- For backward motions, move to target so operator covers target..current
+			vim.fn.cursor(target, 1)
+		end
+	end, { desc = (direction == "next" and "Next" or "Prev") .. " scene break (operator)" })
+end
 -- Only apply these to Markdown files so they don't break your code
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = "markdown",
 	callback = function()
+		vim.defer_fn(function()
+			require("zen-mode").toggle()
+		end, 50)
+
 		-- The triple period swap
 		vim.keymap.set("i", "...", "…", { buffer = true })
 
 		-- Your existing quote mappings
 		vim.keymap.set("i", '"', "“”<Left>", { buffer = true })
-
 		-- Optional: em-dash swap
 		vim.keymap.set("i", "--", "—", { buffer = true })
+		vim.keymap.set("o", "]]", function()
+			vim.cmd("normal! ]]")
+		end, { buffer = true })
+		vim.keymap.set("o", "[[", function()
+			vim.cmd("normal! [[")
+		end, { buffer = true })
 	end,
 }) -- vim: ts=2 sts=2 sw=2 et
