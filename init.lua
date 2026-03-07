@@ -141,6 +141,8 @@ vim.o.timeoutlen = 300
 vim.o.splitright = true
 vim.o.splitbelow = true
 
+vim.opt.spell = true
+vim.opt.spelllang = { "en_us" }
 -- Sets how neovim will display certain whitespace characters in the editor.
 --  See `:help 'list'`
 --  and `:help 'listchars'`
@@ -306,7 +308,8 @@ require("lazy").setup({
 	{
 		-- Switch from the local path to your GitHub handle
 		"derwolz/claude-write",
-		branch = "claude-piping",
+		branch = "claude-chapter-memories",
+		ft = "markdown",
 		-- This ensures it loads when you use your book-writing shortcuts
 		keys = { "<leader>cr", "<leader>cc", "<leader>cl", "<leader>cg", "<leader>cR" },
 
@@ -751,19 +754,88 @@ require("lazy").setup({
 		version = "*",
 		event = "VeryLazy",
 		config = function()
-			require("nvim-surround").setup({
-				keymaps = {
-					-- This is the magic part
-					normal = "s", -- Now 'siw"' works!
-					normal_cur = "ss", -- 'ss"' surrounds the whole line
-					delete = "ds", -- Delete surround
-					change = "cs", -- Change surround
-					visual = "S", -- In visual mode, capital S surrounds
-				},
-			})
+			-- Disable all default keymaps
+			vim.g.nvim_surround_no_mappings = true
+
+			require("nvim-surround").setup({})
+
+			-- Bind your custom keys to the <Plug> mappings
+			vim.keymap.set("n", "s", "<Plug>(nvim-surround-normal)", { desc = "Surround normal" })
+			vim.keymap.set("n", "ss", "<Plug>(nvim-surround-normal-cur)", { desc = "Surround current line" })
+			vim.keymap.set("n", "ds", "<Plug>(nvim-surround-delete)", { desc = "Delete surround" })
+			vim.keymap.set("n", "cs", "<Plug>(nvim-surround-change)", { desc = "Change surround" })
+			vim.keymap.set("x", "S", "<Plug>(nvim-surround-visual)", { desc = "Surround visual" })
 		end,
 	},
+	{
+		"goolord/alpha-nvim",
+		dependencies = { "nvim-tree/nvim-web-devicons" },
+		config = function()
+			local dashboard = require("alpha.themes.dashboard")
 
+			-- Customize the header (ASCII art)
+			dashboard.section.header.val = {
+				"                                                                                                                      ",
+				"                                                                                                                      ",
+				"                                                                                                                      ",
+				"                                                                                                                      ",
+				"                                                                                                                      ",
+				"                                                                                                                      ",
+				"                                                                                                                      ",
+				"                                                                                          #%@@@%=  .....              ",
+				"                                                                             *%@@%   %@@@@@@@@@+:......:....          ",
+				"                                                                        +=%@=@@#+-. @@@@@@%+-:...:::::.....           ",
+				"                                                                 *@@@@@@@@@#:%@@@+. @@@@%%==*+:::::... .              ",
+				"                                                         =%%# #@@%@@@@@##@@@=@@@@*: *@@@@@@@#=:::.......              ",
+				"                                                  = ##+#*@@@# #@@%%@@@+ =#@@=#@@@+: -@@@#=::..........                ",
+				"                                              *@@@**@@@%+%@@%#@@@*@@@@=.*@@@+%@@@+::=@@@@%#%#%%:::...::...            ",
+				"                          #@@@*:       @@@@+  *@@@*#@@@+ +@@@@@@%+@@@@%@@@%+.@@@@+  *@@@@@@@@@*-:::::::..             ",
+				"                    %%=  %@@@%*@@@@#. %@@@@+  *@@@@@@@=:  +#@@@@++@@@@#@@@*: @@@@- =#@@@#*+--:::..                    ",
+				"               %@@@@@@+  @@@@#@@@@@@: %@@@%+  *@@@@@@%+:  .-@@@@-+@@@+.+@@@+.@@@%: .==::..                            ",
+				"               #@@@@@@#: @@@#%@@@@@@= @@@@#-. *@@@@@@@%=  .+@@@-:-@@@#::%@@#---:..  :=:#@@@@+-                        ",
+				"                %@@@@@%-#@@%+@@**@@@#.%@@@#:  *@@@#-#%#=:::+@@@+.-@@@=  -=::-#@@@#@@+:-@@@%=.                         ",
+				"                 @@@@@@-%@@+%@@==%@@@-%@@@*-#+*@@@-:=*%@=: %@@@+ =-:. #*  @@@@@@##@@*-@@@*-.                          ",
+				"               ..:%@@@@+@@#+@@@%#@@@@+@@@@@@@++@@@*.***+-: .. +@%* %@@@*#@@@@*+#=#@@@@@@+:.                           ",
+				"                  #@@@@@@@=@@@=***@%#=*%@@@@#++%%-::*+-*@@# @@@@%- @@@@:@@@%=  :.@@@@@@@#=                            ",
+				"             ....::%@@@@@*=%#*=:::+#%#=+=:::-*%@##%%%@@@@@@+@@@@#: @@@@+@@@*    .@@@@@@@@#=                           ",
+				"           ...::.::=*#**+:+##*-. .-:..-+*@@@@@@@@@@@@@@%@@@@#@@@*: @@@%*@@@*   --@@@@+#@@@#-                          ",
+				"          .:::::::::+%%#-.--=#%@@+ #@@@%+##*@@@@-=#@@@=+=@@@%@@@+.-@@@++@@@@*#@#+@@@@:=%@@@+-                         ",
+				"        ......::::.....    -*@@@@#=@@@*:::::@@@#  @@@@@@@@@=@@@@+:*@@%-:%@@@@@@+#@@#+:.=**=-:                         ",
+				"      .........       ......:*@@@@@@@*:    #@@@*  @@@@@@@%-.#@@@@@@@%- .-*%%#+-::-::::.........                       ",
+				"        ..      ...........:::*@@@@@*..... %@@@+  %@@@*%@@#.-#@@@@#=:.:::::----:::::::::::::...                       ",
+				"                  .......::...-%@@@@+...   %@%%-.#@@@@*=%@@%..:::.:::------::-------:::.....                          ",
+				"                   .......    #@@@@@@*. ...=#%@: %@@@#+.+##%------------::::::::::::.::......                         ",
+				"               .....   .:::.:+@@@*@@@@*....#%%#. ::::::-------------:::.....                                          ",
+				"                 ..:::::::::=@@@*-+@@@%+.  ..:::::---:::::::::::--::.......:::::.                                     ",
+				"             ..::::...:::..#@@@%+ .-:.:::::----:::::::::::::::..:..    ......                                         ",
+				"          ..........      ++*+-:......:.::::::::::::..          ..                                                    ",
+				"          ..              ...... ....::.....::.                 ...                                                   ",
+				"                             .......        :.                  ...                                                   ",
+				"                           ..... .          ..                  ..                                                    ",
+				"                           .                ..                                                                        ",
+				"                                            ..                                                                        ",
+				"                                            ..                                                                        ",
+				"                                            ..                                                                        ",
+				"                                           ..                                                                         ",
+				"                                                                                                                      ",
+				"                                                                                                                      ",
+				"                                                                                                                      ",
+				"                                                                                                                      ",
+				"                                                                                                                      ",
+				"                                                                                                                      ",
+			}
+
+			-- Customize buttons
+			dashboard.section.buttons.val = {
+				dashboard.button("e", "  New file", ":ene <BAR> startinsert <CR>"),
+				dashboard.button("f", "  Find file", ":Telescope find_files <CR>"),
+				dashboard.button("r", "  Recent files", ":Telescope oldfiles <CR>"),
+				dashboard.button("q", "  Quit", ":qa<CR>"),
+			}
+
+			require("alpha").setup(dashboard.config)
+		end,
+	},
 	{ -- Autoformat
 		"stevearc/conform.nvim",
 		event = { "BufWritePre" },
