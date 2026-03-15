@@ -750,6 +750,12 @@ require("lazy").setup({
 		end,
 	},
 	{
+		"derwolz/nvim-redundancy-check",
+		config = function()
+			require("quill").setup()
+		end,
+	},
+	{
 		"kylechui/nvim-surround",
 		version = "*",
 		event = "VeryLazy",
