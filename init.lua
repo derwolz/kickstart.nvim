@@ -288,6 +288,7 @@ require("lazy").setup({
 	-- See `:help gitsigns` to understand what the configuration keys do
 	{ -- Adds git related signs to the gutter, as well as utilities for managing changes
 		"lewis6991/gitsigns.nvim",
+		event = "VeryLazy",
 		opts = {
 			signs = {
 				add = { text = "+" },
@@ -1112,6 +1113,9 @@ require("lazy").setup({
 		"folke/zen-mode.nvim",
 		cmd = "ZenMode", -- Allows you to trigger it manually with :ZenMode
 		opts = {
+			plugins = {
+				neo_tree = { enabled = true },
+			},
 			window = {
 				width = 0.88, -- The window takes up 85% of the screen width
 				options = {
@@ -1123,7 +1127,18 @@ require("lazy").setup({
 			},
 		},
 	},
-
+	{
+		"nvim-neo-tree/neo-tree.nvim",
+		branch = "v3.x",
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+			"nvim-tree/nvim-web-devicons", -- optional but recommended
+			"MunifTanjim/nui.nvim",
+		},
+		opts = {
+			-- put your neo-tree config here if you want
+		},
+	},
 	-- require 'kickstart.plugins.debug',
 	-- require 'kickstart.plugins.indent_line',
 	-- require 'kickstart.plugins.lint',
@@ -1241,6 +1256,7 @@ for _, mapping in ipairs({
 		end
 	end, { desc = (direction == "next" and "Next" or "Prev") .. " scene break (operator)" })
 end
+vim.keymap.set("n", "<leader>e", "<cmd>Neotree toggle<cr>", { desc = "Toggle Neo-tree" })
 -- Only apply these to Markdown files so they don't break your code
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = "markdown",
@@ -1248,9 +1264,25 @@ vim.api.nvim_create_autocmd("FileType", {
 		vim.defer_fn(function()
 			require("zen-mode").toggle()
 		end, 50)
+		-- Smart j/k movement: visual lines when no count, real lines when you use a count (e.g. 5j)
+		vim.keymap.set({ "n", "x" }, "j", function()
+			return vim.v.count == 0 and "gj" or "j"
+		end, { expr = true, silent = true })
 
+		vim.keymap.set("n", "<leader>n", "<cmd>ZenMode<cr>", { desc = "Toggle ZenMode" })
+		vim.keymap.set({ "n", "x" }, "k", function()
+			return vim.v.count == 0 and "gk" or "k"
+		end, { expr = true, silent = true })
+
+		-- Also make arrow keys behave the same way (very intuitive)
+		vim.keymap.set({ "n", "x" }, "<Up>", "gk", { noremap = true, silent = true })
+		vim.keymap.set({ "n", "x" }, "<Down>", "gj", { noremap = true, silent = true })
+		vim.keymap.set("i", "<C-BS>", "<C-w>", { noremap = true, silent = true })
+		vim.keymap.set("i", "<C-h>", "<C-w>", { noremap = true, silent = true })
 		-- The triple period swap
 		vim.keymap.set("i", "...", "…", { buffer = true })
+		--
+		-- Neo-tree toggle
 
 		-- Your existing quote mappings
 		vim.keymap.set("i", '"', "“”<Left>", { buffer = true })
